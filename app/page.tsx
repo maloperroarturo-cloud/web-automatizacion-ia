@@ -135,14 +135,6 @@ const chatMessages = [
   { role: "system", text: "Claro. Te reservo a las 18:30. Dejame nombre y telefono para confirmar la cita." }
 ];
 
-const budgetOptions = [
-  "Menos de 500 EUR",
-  "500 - 1.000 EUR",
-  "1.000 - 2.500 EUR",
-  "Mas de 2.500 EUR",
-  "Aun no lo se"
-];
-
 const stats = [
   ["+ citas", "sin depender de estar siempre al telefono"],
   ["- tareas", "repetitivas para el equipo"],
@@ -156,6 +148,14 @@ const painPoints = [
   "Webs bonitas que no convierten en reservas ni oportunidades"
 ];
 
+const serviceInterestOptions = [
+  "Reservas online",
+  "Carta QR",
+  "Chatbot de atencion",
+  "Web + automatizaciones",
+  "Diagnostico completo"
+];
+
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeDemo, setActiveDemo] = useState(0);
@@ -164,13 +164,38 @@ export default function Home() {
   const [bookingHour, setBookingHour] = useState(bookingHours[2]);
   const [menuCategory, setMenuCategory] = useState(menuData[0]);
   const [chatStep, setChatStep] = useState(2);
+  const [contactStatus, setContactStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [contactMessage, setContactMessage] = useState("");
 
-  const handleContactSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleContactSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const formData = Object.fromEntries(new FormData(event.currentTarget).entries());
+    setContactStatus("sending");
+    setContactMessage("");
 
-    // Ready for a future /api/contact endpoint using Resend, Supabase or both.
-    console.info("Contact form payload", formData);
+    const form = event.currentTarget;
+    const formData = Object.fromEntries(new FormData(form).entries());
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result?.message ?? "No se ha podido enviar el formulario.");
+      }
+
+      setContactStatus("success");
+      setContactMessage("Solicitud enviada correctamente. Te responderemos lo antes posible.");
+      form.reset();
+    } catch (error) {
+      setContactStatus("error");
+      setContactMessage(error instanceof Error ? error.message : "Error al enviar. Intentalo de nuevo.");
+    }
   };
 
   return (
@@ -691,40 +716,50 @@ export default function Home() {
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-semibold text-white">
                 Nombre
-                <input name="name" required className="mt-2 w-full rounded-md border border-white/10 bg-[#101827] px-4 py-3 text-white outline-none transition placeholder:text-white/32 focus:border-cyan" placeholder="Tu nombre" />
+                <input name="nombre" required className="mt-2 w-full rounded-md border border-white/10 bg-[#101827] px-4 py-3 text-white outline-none transition placeholder:text-white/32 focus:border-cyan" placeholder="Tu nombre" />
               </label>
               <label className="text-sm font-semibold text-white">
                 Negocio
-                <input name="business" required className="mt-2 w-full rounded-md border border-white/10 bg-[#101827] px-4 py-3 text-white outline-none transition placeholder:text-white/32 focus:border-cyan" placeholder="Peluqueria, bar, clinica..." />
+                <input name="negocio" className="mt-2 w-full rounded-md border border-white/10 bg-[#101827] px-4 py-3 text-white outline-none transition placeholder:text-white/32 focus:border-cyan" placeholder="Peluqueria, bar, clinica..." />
               </label>
               <label className="text-sm font-semibold text-white">
                 Telefono
-                <input name="phone" required className="mt-2 w-full rounded-md border border-white/10 bg-[#101827] px-4 py-3 text-white outline-none transition placeholder:text-white/32 focus:border-cyan" placeholder="+34 600 000 000" />
+                <input name="telefono" className="mt-2 w-full rounded-md border border-white/10 bg-[#101827] px-4 py-3 text-white outline-none transition placeholder:text-white/32 focus:border-cyan" placeholder="+34 600 000 000" />
               </label>
               <label className="text-sm font-semibold text-white">
                 Email
-                <input name="email" type="email" required className="mt-2 w-full rounded-md border border-white/10 bg-[#101827] px-4 py-3 text-white outline-none transition placeholder:text-white/32 focus:border-cyan" placeholder="hola@empresa.com" />
+                <input name="email" type="email" className="mt-2 w-full rounded-md border border-white/10 bg-[#101827] px-4 py-3 text-white outline-none transition placeholder:text-white/32 focus:border-cyan" placeholder="hola@empresa.com" />
               </label>
             </div>
             <label className="mt-4 block text-sm font-semibold text-white">
-              Que quiere automatizar
-              <textarea name="automationGoal" required className="mt-2 min-h-32 w-full resize-none rounded-md border border-white/10 bg-[#101827] px-4 py-3 text-white outline-none transition placeholder:text-white/32 focus:border-cyan" placeholder="Reservas, carta QR, atencion, formularios, seguimiento, procesos internos..." />
-            </label>
-            <label className="mt-4 block text-sm font-semibold text-white">
-              Presupuesto aproximado
-              <select name="budget" required className="mt-2 w-full rounded-md border border-white/10 bg-[#101827] px-4 py-3 text-white outline-none transition focus:border-cyan">
+              Servicio que le interesa
+              <select name="servicio" className="mt-2 w-full rounded-md border border-white/10 bg-[#101827] px-4 py-3 text-white outline-none transition focus:border-cyan">
                 <option value="">Selecciona una opcion</option>
-                {budgetOptions.map((option) => (
+                {serviceInterestOptions.map((option) => (
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
             </label>
+            <label className="mt-4 block text-sm font-semibold text-white">
+              Mensaje
+              <textarea name="mensaje" required className="mt-2 min-h-32 w-full resize-none rounded-md border border-white/10 bg-[#101827] px-4 py-3 text-white outline-none transition placeholder:text-white/32 focus:border-cyan" placeholder="Cuentame que quieres automatizar, que problema quieres resolver o que proceso quieres mejorar..." />
+            </label>
             <button
               type="submit"
+              disabled={contactStatus === "sending"}
               className="mt-5 flex w-full items-center justify-center gap-2 rounded-md bg-cyan px-6 py-4 font-semibold text-obsidian shadow-glow transition hover:bg-white"
             >
-              Enviar solicitud <ArrowRight className="h-5 w-5" />
+              {contactStatus === "sending" ? "Enviando..." : "Enviar solicitud"} <ArrowRight className="h-5 w-5" />
             </button>
+            {contactMessage && (
+              <p className={`mt-4 rounded-md border px-4 py-3 text-sm font-semibold ${
+                contactStatus === "success"
+                  ? "border-cyan/30 bg-cyan/10 text-cyan"
+                  : "border-rose/30 bg-rose/10 text-rose"
+              }`}>
+                {contactMessage}
+              </p>
+            )}
             <p className="mt-4 text-center text-xs leading-5 text-white/46">
               Te contactaremos para entender el proceso y preparar una recomendacion concreta.
             </p>
