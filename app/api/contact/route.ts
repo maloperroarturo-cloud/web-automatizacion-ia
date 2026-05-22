@@ -3,6 +3,8 @@ import { Resend } from "resend";
 
 export const runtime = "nodejs";
 
+const DEFAULT_CONTACT_TO_EMAIL = "nexaflow076@gmail.com";
+
 type ContactPayload = {
   nombre?: string;
   negocio?: string;
@@ -30,7 +32,7 @@ function escapeHtml(value: string) {
 
 export async function POST(request: Request) {
   const resendApiKey = process.env.RESEND_API_KEY;
-  const toEmail = process.env.CONTACT_TO_EMAIL;
+  const toEmail = process.env.CONTACT_TO_EMAIL || DEFAULT_CONTACT_TO_EMAIL;
 
   let body: ContactPayload;
 
@@ -76,9 +78,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!resendApiKey || !toEmail) {
+  if (!resendApiKey) {
     return NextResponse.json(
-      { message: "Faltan las variables RESEND_API_KEY o CONTACT_TO_EMAIL." },
+      { message: "Falta RESEND_API_KEY. Anade una API key valida de Resend en Vercel." },
       { status: 500 }
     );
   }
