@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
+export const runtime = "nodejs";
+
 type ContactPayload = {
   nombre?: string;
   negocio?: string;
@@ -80,17 +82,21 @@ export async function POST(request: Request) {
     ["Negocio", payload.negocio || "No indicado"],
     ["Telefono", payload.telefono || "No indicado"],
     ["Email", payload.email || "No indicado"],
-    ["Servicio que le interesa", payload.servicio || "No indicado"],
     ["Mensaje", payload.mensaje]
   ];
 
+  const optionalRows = payload.servicio
+    ? [["Servicio que le interesa", payload.servicio]]
+    : [];
+  const emailRows = [...rows, ...optionalRows];
+
   try {
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: "NexaFlow <onboarding@resend.dev>",
       to: [toEmail],
       replyTo: payload.email || undefined,
       subject,
-      text: rows.map(([label, value]) => `${label}: ${value}`).join("\n"),
+      text: emailRows.map(([label, value]) => `${label}: ${value}`).join("\n"),
       html: `
         <div style="font-family: Arial, sans-serif; background: #080c14; padding: 32px; color: #ffffff; line-height: 1.5;">
           <div style="max-width: 640px; margin: 0 auto; background: #101827; border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; overflow: hidden;">
@@ -99,7 +105,7 @@ export async function POST(request: Request) {
               <h1 style="margin: 0; font-size: 24px;">Contacto desde NexaFlow</h1>
             </div>
             <div style="padding: 24px;">
-              ${rows
+              ${emailRows
                 .map(
                   ([label, value]) => `
                     <div style="padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.10);">
@@ -115,7 +121,20 @@ export async function POST(request: Request) {
       `
     });
 
-    return NextResponse.json({ ok: true });
+    if (error) {
+      console.error("Resend rejected contact email", error);
+
+      return NextResponse.json(
+        {
+          message:
+            error.message ??
+            "Resend ha rechazado el envio. Revisa la API key, el email destino y el remitente."
+        },
+        { status: 502 }
+      );
+    }
+
+    return NextResponse.json({ ok: true, id: data?.id });
   } catch (error) {
     console.error("Contact email failed", error);
 
