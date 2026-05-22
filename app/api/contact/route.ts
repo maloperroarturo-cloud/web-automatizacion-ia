@@ -129,11 +129,17 @@ export async function POST(request: Request) {
     if (error) {
       console.error("Resend rejected contact email", error);
 
+      const resendMessage = error.message ?? "";
+      const isTestingRecipientError = resendMessage
+        .toLowerCase()
+        .includes("only send testing emails to your own email address");
+
       return NextResponse.json(
         {
-          message:
-            error.message ??
-            "Resend ha rechazado el envio. Revisa RESEND_API_KEY y CONTACT_TO_EMAIL."
+          message: isTestingRecipientError
+            ? "Resend esta en modo prueba: con onboarding@resend.dev solo puedes enviar al email de la cuenta que genero la API key. Para recibir en nexaflow076@gmail.com, crea la API key desde una cuenta Resend registrada con nexaflow076@gmail.com y actualiza RESEND_API_KEY en Vercel."
+            : resendMessage ||
+              "Resend ha rechazado el envio. Revisa RESEND_API_KEY y CONTACT_TO_EMAIL."
         },
         { status: 502 }
       );
