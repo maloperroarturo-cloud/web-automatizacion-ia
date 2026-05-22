@@ -148,14 +148,6 @@ const painPoints = [
   "Webs bonitas que no convierten en reservas ni oportunidades"
 ];
 
-const serviceInterestOptions = [
-  "Reservas online",
-  "Carta QR",
-  "Chatbot de atencion",
-  "Web + automatizaciones",
-  "Diagnostico completo"
-];
-
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeDemo, setActiveDemo] = useState(0);
@@ -732,27 +724,18 @@ export default function Home() {
               </label>
             </div>
             <label className="mt-4 block text-sm font-semibold text-white">
-              Servicio que le interesa
-              <select name="servicio" className="mt-2 w-full rounded-md border border-white/10 bg-[#101827] px-4 py-3 text-white outline-none transition focus:border-cyan">
-                <option value="">Selecciona una opcion</option>
-                {serviceInterestOptions.map((option) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
-            </label>
-            <label className="mt-4 block text-sm font-semibold text-white">
               Mensaje
               <textarea name="mensaje" required className="mt-2 min-h-32 w-full resize-none rounded-md border border-white/10 bg-[#101827] px-4 py-3 text-white outline-none transition placeholder:text-white/32 focus:border-cyan" placeholder="Cuentame que quieres automatizar, que problema quieres resolver o que proceso quieres mejorar..." />
             </label>
             <button
               type="submit"
               disabled={contactStatus === "sending"}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-md bg-cyan px-6 py-4 font-semibold text-obsidian shadow-glow transition hover:bg-white"
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-md bg-cyan px-6 py-4 font-semibold text-obsidian shadow-glow transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
             >
               {contactStatus === "sending" ? "Enviando..." : "Enviar solicitud"} <ArrowRight className="h-5 w-5" />
             </button>
             {contactMessage && (
-              <p className={`mt-4 rounded-md border px-4 py-3 text-sm font-semibold ${
+              <p aria-live="polite" className={`mt-4 rounded-md border px-4 py-3 text-sm font-semibold ${
                 contactStatus === "success"
                   ? "border-cyan/30 bg-cyan/10 text-cyan"
                   : "border-rose/30 bg-rose/10 text-rose"
